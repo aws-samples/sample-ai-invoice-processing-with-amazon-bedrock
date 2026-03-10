@@ -1,0 +1,305 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "InvoiceFlow AI - Minimal Infrastructure for Non-Production Use",
+  "Metadata": {
+    "cfn_nag": {
+      "rules_to_suppress": [
+        {"id": "W76", "reason": "IAM Access Analyzer not required for POC - recommended for production deployments"}
+      ]
+    },
+    "checkov": {
+      "skip": [
+        {"id": "CKV_AWS_162", "comment": "IAM Access Analyzer not required for POC - recommended for production deployments"}
+      ]
+    }
+  },
+  "Parameters": {
+    "AppName": {
+      "Type": "String",
+      "Default": "invoiceflow-ai",
+      "Description": "Application name"
+    },
+    "AdminEmail": {
+      "Type": "String",
+      "Description": "Valid email address for the admin user. Cognito will send the temporary password to this email.",
+      "AllowedPattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+      "ConstraintDescription": "Must be a valid email address"
+    }
+  },
+  "Resources": {
+    "LoggingBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Metadata": {
+        "cfn_nag": {
+          "rules_to_suppress": [
+            {"id": "W35", "reason": "This is the logging bucket itself - enabling logging would create a circular dependency"},
+            {"id": "W51", "reason": "Bucket policy is defined in LoggingBucketPolicy resource"},
+            {"id": "W41", "reason": "Versioning not required for logging bucket - logs are append-only"}
+          ]
+        },
+        "cdk_nag": {
+          "rules_to_suppress": [
+            {"id": "AwsSolutions-S1", "reason": "This is the logging bucket itself"},
+            {"id": "AwsSolutions-S10", "reason": "TLS enforced via LoggingBucketPolicy"}
+          ]
+        },
+        "checkov": {
+          "skip": [
+            {"id": "CKV_AWS_18", "comment": "This is the logging bucket itself - enabling logging would create a circular dependency"},
+            {"id": "CKV_AWS_21", "comment": "Versioning not required for logging bucket - logs are append-only, recommended for production"}
+          ]
+        },
+        "kics": {
+          "skip": [
+            {"id": "S3 Bucket Without Versioning", "comment": "Versioning not required for logging bucket - logs are append-only, recommended for production"},
+            {"id": "S3 Bucket Logging Disabled", "comment": "This is the logging bucket itself - enabling logging would create a circular dependency"}
+          ]
+        }
+      },
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "${AppName}-logs-${AWS::AccountId}"
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "DeleteOldLogs",
+              "Status": "Enabled",
+              "ExpirationInDays": 90
+            }
+          ]
+        }
+      }
+    },
+    "LoggingBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "LoggingBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "EnforceTLS",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                {
+                  "Fn::GetAtt": ["LoggingBucket", "Arn"]
+                },
+                {
+                  "Fn::Sub": "${LoggingBucket.Arn}/*"
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "DocumentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "${AppName}-bucket-${AWS::AccountId}"
+        },
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "LoggingConfiguration": {
+          "DestinationBucketName": {
+            "Ref": "LoggingBucket"
+          },
+          "LogFilePrefix": "access-logs/"
+        }
+      }
+    },
+    "DocumentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "DocumentBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "EnforceTLS",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "DocumentBucket",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Sub": "${DocumentBucket.Arn}/*"
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "CognitoUserPool": {
+      "Type": "AWS::Cognito::UserPool",
+      "Properties": {
+        "UserPoolName": {
+          "Fn::Sub": "${AppName}-user-pool"
+        },
+        "AdminCreateUserConfig": {
+          "AllowAdminCreateUserOnly": true
+        },
+        "MfaConfiguration": "OPTIONAL",
+        "EnabledMfas": [
+          "SOFTWARE_TOKEN_MFA"
+        ],
+        "UserAttributeUpdateSettings": {
+          "AttributesRequireVerificationBeforeUpdate": [
+            "email"
+          ]
+        },
+        "AutoVerifiedAttributes": [
+          "email"
+        ],
+        "UsernameAttributes": [
+          "email"
+        ],
+        "Policies": {
+          "PasswordPolicy": {
+            "MinimumLength": 12,
+            "RequireUppercase": true,
+            "RequireLowercase": true,
+            "RequireNumbers": true,
+            "RequireSymbols": true
+          }
+        },
+        "Schema": [
+          {
+            "Name": "email",
+            "Required": true,
+            "Mutable": false
+          }
+        ]
+      }
+    },
+    "CognitoUserPoolClient": {
+      "Type": "AWS::Cognito::UserPoolClient",
+      "Properties": {
+        "ClientName": {
+          "Fn::Sub": "${AppName}-client"
+        },
+        "UserPoolId": {
+          "Ref": "CognitoUserPool"
+        },
+        "GenerateSecret": true,
+        "ExplicitAuthFlows": [
+          "ALLOW_USER_PASSWORD_AUTH",
+          "ALLOW_REFRESH_TOKEN_AUTH",
+          "ALLOW_USER_SRP_AUTH"
+        ]
+      }
+    },
+    "CognitoUserPoolDomain": {
+      "Type": "AWS::Cognito::UserPoolDomain",
+      "Properties": {
+        "Domain": {
+          "Fn::Sub": "${AppName}-${AWS::AccountId}"
+        },
+        "UserPoolId": {
+          "Ref": "CognitoUserPool"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "DocumentBucketName": {
+      "Description": "S3 Document Bucket Name",
+      "Value": {
+        "Ref": "DocumentBucket"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-DocumentBucket"
+        }
+      }
+    },
+    "CognitoUserPoolId": {
+      "Description": "Cognito User Pool ID",
+      "Value": {
+        "Ref": "CognitoUserPool"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-UserPoolId"
+        }
+      }
+    },
+    "CognitoClientId": {
+      "Description": "Cognito User Pool Client ID",
+      "Value": {
+        "Ref": "CognitoUserPoolClient"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-ClientId"
+        }
+      }
+    },
+    "CognitoUserPoolDomain": {
+      "Description": "Cognito User Pool Domain",
+      "Value": {
+        "Ref": "CognitoUserPoolDomain"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-UserPoolDomain"
+        }
+      }
+    }
+  }
+}

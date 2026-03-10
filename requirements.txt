@@ -1,0 +1,16 @@
+# InvoiceFlow AI - Dependencies
+
+# AWS SDK
+boto3>=1.34.0
+
+# Web Framework
+streamlit>=1.28.0
+
+# Data Display (used by Streamlit DataFrames)
+pandas>=2.0.0
+
+# System Process Management
+psutil>=5.9.0
+
+# SSL/TLS Certificate Generation (start_app.py)
+cryptography>=41.0.0

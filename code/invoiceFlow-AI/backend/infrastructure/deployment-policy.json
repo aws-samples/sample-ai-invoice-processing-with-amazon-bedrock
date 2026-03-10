@@ -1,0 +1,197 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3BucketManagement",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:HeadBucket",
+        "s3:PutBucketEncryption",
+        "s3:GetBucketEncryption",
+        "s3:PutEncryptionConfiguration",
+        "s3:GetEncryptionConfiguration",
+        "s3:PutBucketVersioning",
+        "s3:GetBucketVersioning",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:GetBucketPublicAccessBlock",
+        "s3:PutBucketPolicy",
+        "s3:GetBucketPolicy"
+      ],
+      "Resource": "arn:aws:s3:::invoiceflow-ai-*"
+    },
+    {
+      "Sid": "S3ObjectManagement",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListObjectsV2",
+        "s3:GetObjectVersion",
+        "s3:DeleteObjectVersion"
+      ],
+      "Resource": "arn:aws:s3:::invoiceflow-ai-*/*"
+    },
+    {
+      "Sid": "CloudFormationManagement",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateStack",
+        "cloudformation:UpdateStack",
+        "cloudformation:DeleteStack",
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:DescribeStackResources",
+        "cloudformation:GetTemplate",
+        "cloudformation:ValidateTemplate",
+        "cloudformation:ListStacks"
+      ],
+      "Resource": "arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/invoiceflow-ai-*/*"
+    },
+    {
+      "Sid": "CognitoUserPoolManagement",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:CreateUserPool",
+        "cognito-idp:DeleteUserPool",
+        "cognito-idp:DescribeUserPool",
+        "cognito-idp:UpdateUserPool",
+        "cognito-idp:CreateUserPoolClient",
+        "cognito-idp:DeleteUserPoolClient",
+        "cognito-idp:DescribeUserPoolClient",
+        "cognito-idp:UpdateUserPoolClient",
+        "cognito-idp:CreateUserPoolDomain",
+        "cognito-idp:DeleteUserPoolDomain",
+        "cognito-idp:DescribeUserPoolDomain",
+        "cognito-idp:AdminCreateUser",
+        "cognito-idp:AdminDeleteUser",
+        "cognito-idp:AdminGetUser",
+        "cognito-idp:AdminSetUserPassword"
+      ],
+      "Resource": "arn:aws:cognito-idp:${AWS::Region}:${AWS::AccountId}:userpool/*"
+    },
+    {
+      "Sid": "CognitoListPools",
+      "Effect": "Allow",
+      "Action": [
+        "cognito-idp:ListUserPools",
+        "cognito-idp:ListUserPoolClients"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "BedrockKnowledgeBaseManagement",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:CreateKnowledgeBase",
+        "bedrock:DeleteKnowledgeBase",
+        "bedrock:GetKnowledgeBase",
+        "bedrock:UpdateKnowledgeBase",
+        "bedrock:CreateDataSource",
+        "bedrock:DeleteDataSource",
+        "bedrock:GetDataSource",
+        "bedrock:ListDataSources",
+        "bedrock:UpdateDataSource",
+        "bedrock:StartIngestionJob",
+        "bedrock:GetIngestionJob",
+        "bedrock:ListIngestionJobs",
+        "bedrock-agent:CreateKnowledgeBase",
+        "bedrock-agent:DeleteKnowledgeBase",
+        "bedrock-agent:GetKnowledgeBase",
+        "bedrock-agent:UpdateKnowledgeBase",
+        "bedrock-agent:CreateDataSource",
+        "bedrock-agent:DeleteDataSource",
+        "bedrock-agent:GetDataSource",
+        "bedrock-agent:ListDataSources",
+        "bedrock-agent:UpdateDataSource",
+        "bedrock-agent:StartIngestionJob",
+        "bedrock-agent:GetIngestionJob",
+        "bedrock-agent:ListIngestionJobs"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:knowledge-base/*",
+        "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:data-source/*"
+      ]
+    },
+    {
+      "Sid": "BedrockGuardrailManagement",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:CreateGuardrail",
+        "bedrock:GetGuardrail",
+        "bedrock:UpdateGuardrail",
+        "bedrock:DeleteGuardrail"
+      ],
+      "Resource": "arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:guardrail/*"
+    },
+    {
+      "Sid": "BedrockListOperations",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:ListGuardrails",
+        "bedrock:ListKnowledgeBases",
+        "bedrock-agent:ListKnowledgeBases"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "S3VectorsAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3vectors:CreateVectorBucket",
+        "s3vectors:DeleteVectorBucket",
+        "s3vectors:GetVectorBucket",
+        "s3vectors:CreateIndex",
+        "s3vectors:DeleteIndex",
+        "s3vectors:GetIndex",
+        "s3vectors:ListIndexes",
+        "s3vectors:PutVector",
+        "s3vectors:GetVector",
+        "s3vectors:DeleteVector",
+        "s3vectors:QueryVectors"
+      ],
+      "Resource": "arn:aws:s3vectors:${AWS::Region}:${AWS::AccountId}:bucket/invoiceflow-ai-*"
+    },
+    {
+      "Sid": "IAMRoleManagement",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:GetRole",
+        "iam:UpdateRole",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:ListRolePolicies"
+      ],
+      "Resource": "arn:aws:iam::${AWS::AccountId}:role/invoiceflow-ai-*"
+    },
+    {
+      "Sid": "IAMPassRoleRestricted",
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::${AWS::AccountId}:role/invoiceflow-ai-*",
+      "Condition": {
+        "StringEquals": {
+          "iam:PassedToService": [
+            "bedrock.amazonaws.com",
+            "s3vectors.amazonaws.com"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "STSAccess",
+      "Effect": "Allow",
+      "Action": [
+        "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+# Secrets and credentials
+infrastructure_outputs.json
+config.json
+
+# SSL certificates and keys
+*.pem
+ssl/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.pyo
+
+# Logs
+logs/
+*.log
+
+# OS files
+.DS_Store
+
+# Environment files
+.env
+.env.*
