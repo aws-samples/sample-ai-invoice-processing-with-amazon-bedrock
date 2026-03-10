@@ -164,35 +164,6 @@ graph TD
 | Cost per Invoice | < $0.10 | $0.02-0.05 |
 | System Availability | > 99.5% | 99.9% |
 
-## Cost Estimation
-
-### Monthly AWS Costs (Approximate)
-
-| Service | Usage | Cost |
-|---------|-------|------|
-| **Bedrock Claude Sonnet 4** | 500 invoices/month | $15-30 |
-| **Bedrock Knowledge Base** | S3 Vectors storage | $5-10 |
-| **S3 Storage** | Documents + vectors | $2-5 |
-| **Cognito** | User authentication | Free tier |
-| **Total** | | **$22-45/month** |
-
-### ROI Analysis
-
-**Traditional Manual Processing:**
-- Cost per invoice: $12-15
-- Processing time: 10-15 days
-- Error rate: 20-30%
-
-**InvoiceFlow AI:**
-- Cost per invoice: $0.02-0.05
-- Processing time: < 2 minutes
-- Error rate: < 5%
-
-**Annual Savings (500 invoices/month):**
-- Cost savings: $70,000-85,000
-- Time savings: 2,500+ hours
-- ROI: 634% in Year 1
-
 ## Security and Compliance
 
 ### Current Security Controls (Implemented)
