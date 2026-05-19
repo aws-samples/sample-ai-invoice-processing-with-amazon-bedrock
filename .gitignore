@@ -21,3 +21,10 @@ logs/
 # Environment files
 .env
 .env.*
+
+# Traffic data (local only)
+traffic_history.json
+aggregated_traffic.json
+
+# Virtual environment
+.venv/
