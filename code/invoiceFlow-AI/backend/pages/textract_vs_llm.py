@@ -88,7 +88,8 @@ def extract_with_textract(file_bytes: bytes) -> Dict[str, Any]:
 
 
 # --- LLM Extraction ---
-def extract_with_llm(file_bytes: bytes, model_id: str) -> Dict[str, Any]:
+def extract_with_llm(file_bytes: bytes, model_id: str, max_tokens: int = 4000,
+                     temperature: float = 0.0, top_p: float = 1.0) -> Dict[str, Any]:
     """Extract invoice data using Amazon Bedrock Claude."""
     clients = get_aws_clients()
     bedrock = clients["bedrock"]
@@ -135,9 +136,9 @@ For "line_items", extract an array where each item has:
 
 Return ONLY valid JSON. No explanation or markdown."""
 
-    body = json.dumps({
+    body_params = {
         "anthropic_version": "bedrock-2023-05-31",
-        "max_tokens": 4000,
+        "max_tokens": max_tokens,
         "messages": [
             {
                 "role": "user",
@@ -154,7 +155,14 @@ Return ONLY valid JSON. No explanation or markdown."""
                 ],
             }
         ],
-    })
+    }
+    # Only pass one of temperature/top_p — some models reject both
+    if temperature > 0:
+        body_params["temperature"] = temperature
+    elif top_p < 1.0:
+        body_params["top_p"] = top_p
+
+    body = json.dumps(body_params)
 
     response = bedrock.invoke_model(
         modelId=model_id,
@@ -377,6 +385,22 @@ selected_model_name = st.selectbox(
 )
 selected_model_id = AVAILABLE_MODELS[selected_model_name]
 
+# LLM Parameters in sidebar
+with st.sidebar:
+    st.header("⚙️ LLM Parameters")
+    st.caption("Customize the model behavior")
+    llm_max_tokens = st.slider("Max Tokens", min_value=1000, max_value=8000, value=4000, step=500,
+                               help="Maximum length of the model's response")
+    llm_temperature = st.slider("Temperature", min_value=0.0, max_value=1.0, value=0.0, step=0.1,
+                                help="0 = deterministic, 1 = creative. Use 0 for extraction tasks.")
+    llm_top_p = st.slider("Top P", min_value=0.0, max_value=1.0, value=1.0, step=0.05,
+                          help="Nucleus sampling. Lower = more focused responses.")
+    st.divider()
+    st.caption("💡 **Tips:**")
+    st.caption("• Temperature 0 → consistent extraction results")
+    st.caption("• Max Tokens 4000 → sufficient for most invoices")
+    st.caption("• Increase Max Tokens for invoices with many line items")
+
 # File upload
 uploaded_file = st.file_uploader(
     "Upload Invoice PDF",
@@ -415,7 +439,10 @@ if uploaded_file:
                 with st.spinner(f"Running {selected_model_name}..."):
                     l_start = time.time()
                     try:
-                        llm_result = extract_with_llm(file_bytes, selected_model_id)
+                        llm_result = extract_with_llm(file_bytes, selected_model_id,
+                                                      max_tokens=llm_max_tokens,
+                                                      temperature=llm_temperature,
+                                                      top_p=llm_top_p)
                         l_time = time.time() - l_start
                         st.success(f"Done in {l_time:.1f}s")
                     except Exception as e:
@@ -455,11 +482,18 @@ if uploaded_file:
                 norm_t_items = normalize_textract_line_items(textract_result["line_items"])
                 display_header_comparison(norm_t_header, {})
                 display_line_items_comparison(norm_t_items, [])
+                st.divider()
+                display_raw_json(textract_result, {"header": {}, "line_items": []})
 
             elif llm_result:
                 st.warning("Only LLM results available.")
-                display_header_comparison({}, llm_result.get("header", {}))
-                display_line_items_comparison([], llm_result.get("line_items", []))
+                llm_header = llm_result.get("header", {})
+                llm_header = {k: v for k, v in llm_header.items() if v}
+                llm_items = llm_result.get("line_items", [])
+                display_header_comparison({}, llm_header)
+                display_line_items_comparison([], llm_items)
+                st.divider()
+                display_raw_json({"header": {}, "line_items": [], "other": []}, llm_result)
 
 else:
     st.info("👆 Upload an invoice PDF to get started.")
